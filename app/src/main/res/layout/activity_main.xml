@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:cardBackgroundColor="@color/white_gray"
+    android:background="@color/grey_background"
     tools:context=".main.MainActivity">
 
     <androidx.recyclerview.widget.RecyclerView
