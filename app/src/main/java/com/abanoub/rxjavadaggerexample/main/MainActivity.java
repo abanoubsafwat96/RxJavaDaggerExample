@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
     RecyclerView videosRv;
     VideosAdapter adapter;
+    private Integer downloadPosition;
 
     @Inject
     MainViewModel viewModel;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         AppComponent appComponent = DaggerAppComponent.create();
         appComponent.injectMainActivity(this);
 
+        requestPermissionsIfNotGranted();
         getVideosFromLocalJsonFile();
 //        viewModel.getVideos();
 
@@ -53,7 +55,11 @@ public class MainActivity extends AppCompatActivity {
             adapter = new VideosAdapter(videos, new VideosAdapter.OnItemClick() {
                 @Override
                 public void onDownloadBtnClicked(Video video, int position) {
-
+                    if (Utils.isNetworkAvailable(MainActivity.this)) {
+                        viewModel.downloadFile(video);
+                        downloadPosition = position;
+                    } else
+                        viewModel.showMsgLiveDate.setValue("Check your network connection");
                 }
             });
             videosRv.setAdapter(adapter);
@@ -63,6 +69,13 @@ public class MainActivity extends AppCompatActivity {
             if (msg == null) return;
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
         });
+
+        viewModel.progressLiveDate.observe(this, progress -> {
+            if (progress == null || downloadPosition == null) return;
+            Log.e("progress: ", progress + "");
+            adapter.videosList.get(downloadPosition).setDownloadProgress(progress);
+            adapter.notifyDataSetChanged();
+        });
     }
 
     private void getVideosFromLocalJsonFile() {
@@ -71,6 +84,31 @@ public class MainActivity extends AppCompatActivity {
             viewModel.getVideos(is);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void requestPermissionsIfNotGranted() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            //Returns whether the calling app has All Files Access on the primary shared/external storage media.
+            //Manifest.permission.MANAGE_EXTERNAL_STORAGE
+            if (!Environment.isExternalStorageManager()) {
+                Uri uri = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
+                startActivity(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri));
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (permissions[0].equals(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+            if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
+                // user rejected the permission
+                requestPermissionsIfNotGranted();
+            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                //user allowed the permission
+                getVideosFromLocalJsonFile();
+            }
         }
     }
 }
