@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">RxJavaDaggerExample</string>
+    <string name="loading">Loading, Please wait...</string>
+    <string name="check_network_connection">Check your network connection</string>
+    <string name="serverError">Server error</string>
+    <string name="download">Download</string>
+</resources>
